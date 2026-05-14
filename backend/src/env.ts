@@ -1,3 +1,15 @@
+/** Trim and remove accidental wrapping quotes from Render / dashboard pastes */
+function stripEnvSecret(raw: string): string {
+  let s = raw.trim();
+  if (
+    (s.startsWith('"') && s.endsWith('"')) ||
+    (s.startsWith("'") && s.endsWith("'"))
+  ) {
+    s = s.slice(1, -1).trim();
+  }
+  return s;
+}
+
 export type AppEnv = {
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
@@ -10,9 +22,9 @@ export type AppEnv = {
   PUBLIC_STORAGE_BASE: string;
   /** Resend API key — when set, signer notification emails are sent from `/request-signature` */
   RESEND_API_KEY: string;
-  /** From address for Resend (e.g. `Jasign <onboarding@resend.dev>`). Required for production domains. */
+  /** From address for Resend. Leave empty to use `Jasign <onboarding@resend.dev>` (dev). Production: verify your domain in Resend first. */
   EMAIL_FROM: string;
-/** Public web app origin for links in emails (defaults to first entry in `CORS_ORIGIN` if empty) */
+  /** Public web app origin for links in emails (defaults to first entry in `CORS_ORIGIN` if empty) */
   PUBLIC_APP_URL: string;
 };
 
@@ -24,8 +36,8 @@ export function readEnv(): AppEnv {
   const PORT = Number(process.env.PORT ?? 3001);
   const CORS_ORIGIN_RAW = process.env.CORS_ORIGIN ?? "http://localhost:5173";
   const PUBLIC_STORAGE_BASE = process.env.PUBLIC_STORAGE_BASE ?? "";
-  const RESEND_API_KEY = process.env.RESEND_API_KEY?.trim() ?? "";
-  const EMAIL_FROM = process.env.EMAIL_FROM?.trim() ?? "";
+  const RESEND_API_KEY = stripEnvSecret(process.env.RESEND_API_KEY ?? "");
+  const EMAIL_FROM = stripEnvSecret(process.env.EMAIL_FROM ?? "");
   const PUBLIC_APP_URL = process.env.PUBLIC_APP_URL?.trim() ?? "";
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {

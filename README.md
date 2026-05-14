@@ -97,7 +97,9 @@ _Tool versions are listed under [How to run locally](#how-to-run-locally)._
 1. Create a project at [supabase.com](https://supabase.com/).
 2. **SQL**: In the SQL editor, run `supabase/migrations/001_documents.sql`, then `002_requester_auth.sql` (adds `requester_id` for authenticated requesters).
 3. **Auth**: In **Authentication → Providers**, ensure **Email** is enabled. For local demos you can disable **Confirm email** under Authentication → Providers → Email (so sign-up can sign in immediately).
-4. **Password reset**: In **Authentication → URL Configuration**, add your app URLs to **Redirect URLs** (e.g. `http://localhost:5173/reset-password` for local dev and your production origin with `/reset-password`). The “Forgot password?” flow sends a link that must redirect to that route so the user can set a new password.
+4. **URLs (critical for deployed apps):** In **Authentication → URL Configuration**:
+   - Set **Site URL** to your real SPA origin (e.g. `https://your-app.vercel.app`). If this stays `http://localhost:3000`, confirmation emails will send users to localhost and the browser will show “connection refused.”
+   - Under **Redirect URLs**, add every origin you use (local + production + Vercel previews if needed), for example `http://localhost:5173` and `https://your-app.vercel.app`. Add password-reset routes too: `http://localhost:5173/reset-password` and `https://your-app.vercel.app/reset-password`. Sign-up confirmation uses **`emailRedirectTo`** (the app sets this to the **current** origin when someone registers) — that origin must appear in **Redirect URLs** or Supabase will block the redirect.
 5. **Storage**: Create two public buckets (for MVP speed):
    - `documents` — original PDFs
    - `signed` — signed PDFs  

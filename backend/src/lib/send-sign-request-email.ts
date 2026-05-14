@@ -42,24 +42,29 @@ export async function sendSignRequestEmail(
 
   const text = `Hi ${signerName},\n\n${requesterLabel} asked you to sign: ${title}.\n\nOpen and sign:\n${signingUrl}\n`;
 
-  const res = await fetch(RESEND_API, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to: [to],
-      subject: subjectForSignRequest(title),
-      html,
-      text,
-    }),
-  });
+  try {
+    const res = await fetch(RESEND_API, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from,
+        to: [to],
+        subject: subjectForSignRequest(title),
+        html,
+        text,
+      }),
+    });
 
-  if (!res.ok) {
-    const body = await res.text();
-    return { ok: false, message: `${res.status} ${body.slice(0, 500)}` };
+    if (!res.ok) {
+      const body = await res.text();
+      return { ok: false, message: `${res.status} ${body.slice(0, 500)}` };
+    }
+    return { ok: true };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { ok: false, message: `fetch failed: ${msg}` };
   }
-  return { ok: true };
 }

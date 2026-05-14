@@ -45,7 +45,13 @@ export async function requestSignature(payload: {
   title: string;
   signer_name: string;
   signer_email: string;
-}): Promise<{ id: string; token: string; signingPath: string; emailSent: boolean }> {
+}): Promise<{
+  id: string;
+  token: string;
+  signingPath: string;
+  emailSent: boolean;
+  emailError?: string;
+}> {
   const ah = await authHeaders();
   if (!("Authorization" in ah)) {
     throw new Error("You must be signed in to create a signature request.");
@@ -61,6 +67,7 @@ export async function requestSignature(payload: {
     token?: string;
     signingPath?: string;
     emailSent?: boolean;
+    emailError?: string;
   }>(res);
   if (!res.ok) throw new Error(json.error ?? "Request failed");
   if (!json.id || !json.token || !json.signingPath) throw new Error("Invalid response");
@@ -69,6 +76,7 @@ export async function requestSignature(payload: {
     token: json.token,
     signingPath: json.signingPath,
     emailSent: Boolean(json.emailSent),
+    ...(json.emailError ? { emailError: json.emailError } : {}),
   };
 }
 

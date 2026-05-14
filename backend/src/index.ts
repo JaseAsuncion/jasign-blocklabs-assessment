@@ -147,7 +147,12 @@ const app = new Elysia()
       const signingUrl = `${appBase}/sign/${token}`;
 
       let emailSent = false;
-      if (env.RESEND_API_KEY) {
+      let emailError: string | undefined;
+
+      if (!env.RESEND_API_KEY) {
+        emailError =
+          "RESEND_API_KEY is empty or missing on the server (check Render environment variables).";
+      } else {
         const from =
           env.EMAIL_FROM.trim() || "Jasign <onboarding@resend.dev>";
         const mail = await sendSignRequestEmail({
@@ -161,6 +166,7 @@ const app = new Elysia()
         });
         emailSent = mail.ok;
         if (!mail.ok) {
+          emailError = mail.message;
           console.error("[jasign-api] sign-request email failed:", mail.message);
         }
       }
@@ -170,6 +176,7 @@ const app = new Elysia()
         token,
         signingPath: `/sign/${token}`,
         emailSent,
+        ...(emailError ? { emailError } : {}),
       };
     },
     {

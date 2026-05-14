@@ -15,6 +15,7 @@ export function UploadPage() {
   const [error, setError] = useState<string | null>(null);
   const [signingLink, setSigningLink] = useState<string | null>(null);
   const [emailSent, setEmailSent] = useState<boolean | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   const pdfDropDepth = useRef(0);
   const [pdfDropActive, setPdfDropActive] = useState(false);
@@ -98,6 +99,7 @@ export function UploadPage() {
     setError(null);
     setSigningLink(null);
     setEmailSent(null);
+    setEmailError(null);
     try {
       const up = await uploadPdf(file);
       const req = await requestSignature({
@@ -109,6 +111,7 @@ export function UploadPage() {
       const url = `${window.location.origin}${req.signingPath}`;
       setSigningLink(url);
       setEmailSent(req.emailSent);
+      setEmailError(req.emailError ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {
@@ -321,6 +324,23 @@ export function UploadPage() {
             >
               We could not send the email automatically this time. You can still copy the signing link
               below and share it however you usually reach your signer.
+              {emailError ? (
+                <pre
+                  style={{
+                    margin: "10px 0 0",
+                    padding: 10,
+                    background: "#fff",
+                    border: "1px solid var(--border)",
+                    borderRadius: 8,
+                    fontSize: 11,
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                    color: "#334155",
+                  }}
+                >
+                  {emailError.length > 900 ? `${emailError.slice(0, 900)}…` : emailError}
+                </pre>
+              ) : null}
             </div>
           ) : null}
           <div className="muted" style={{ fontSize: 13 }}>

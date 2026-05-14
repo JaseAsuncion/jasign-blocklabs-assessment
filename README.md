@@ -88,7 +88,13 @@ If anything fails, confirm **`CORS_ORIGIN`** on the API matches your frontend or
 └── .github/workflows # CI: Vitest (frontend + backend)
 ```
 
-Deploy later by hosting the SPA on any static host (Vercel, Netlify, S3+CloudFront) and the API on a Bun-friendly host (Fly.io, Railway, VPS) with environment variables set.
+Deploy the **SPA** (e.g. [Vercel](https://vercel.com/)) and the **API** (e.g. [Render](https://render.com/), [Railway](https://railway.app/), Fly.io) with the same env vars as locally. The SPA needs **`VITE_API_URL`** pointing at your public API URL (no trailing slash). The API needs **`CORS_ORIGIN`** set to your real frontend origin(s), comma-separated if you use production + Vercel preview URLs. Hosting usually sets **`PORT`** for the API automatically—your server reads `process.env.PORT`.
+
+**Vercel:** the repo includes **`frontend/vercel.json`** so client routes like **`/sign/:token`** rewrite to `index.html` (otherwise deep links 404).
+
+**Docker:** **`backend/Dockerfile`** is available if your host deploys from a container (`bun run src/index.ts`).
+
+**Resend (signer email):** on the default testing sender, Resend often only allows automated mail to **your own** inbox until you **verify a domain** and set **`EMAIL_FROM`** to an address on that domain. The app always offers **copy signing link** so demos work for any signer without domain setup.
 
 _Tool versions are listed under [How to run locally](#how-to-run-locally)._
 
@@ -117,6 +123,7 @@ SUPABASE_URL=https://xxxx.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 SUPABASE_ANON_KEY=your-anon-public-key
 PORT=3001
+# Local default; Render/Fly/etc. usually inject PORT — omit or override only if your host requires it.
 CORS_ORIGIN=http://localhost:5173
 # Or multiple frontends (production + Vercel previews), comma-separated, no trailing slashes:
 # CORS_ORIGIN=https://myapp.vercel.app,https://myapp-git-main-user.vercel.app
@@ -130,7 +137,7 @@ PUBLIC_STORAGE_BASE=https://xxxx.supabase.co/storage/v1/object/public
 
 Use the **same** `SUPABASE_URL` as in the dashboard. `SUPABASE_ANON_KEY` is the **anon public** key; the API uses it only to validate `Authorization: Bearer <access_token>` from the React app (still uses the **service role** for storage and DB writes).
 
-**Signer emails (optional):** set `RESEND_API_KEY` in `backend/.env` to send the signing link to the signer when you create a request ([Resend](https://resend.com)). For quick tests, use sender `Jasign <onboarding@resend.dev>` (leave `EMAIL_FROM` empty to use the default) and note Resend may only allow recipients allowed on your plan until you verify a domain. Set `EMAIL_FROM` to your verified domain address in production. Use `PUBLIC_APP_URL` if the link in emails must differ from your primary frontend URL (defaults to the **first** origin in `CORS_ORIGIN` when unset).
+**Signer emails (optional):** set **`RESEND_API_KEY`** on the API ([Resend](https://resend.com)). Leave **`EMAIL_FROM`** empty to use **`Jasign <onboarding@resend.dev>`** for quick tests. **Testing / free tier:** Resend may only deliver automated mail to **your own** email until you verify a domain and set **`EMAIL_FROM`** to that domain—use **copy signing link** in the UI for other signers. Use **`PUBLIC_APP_URL`** if links in emails must differ from the first **`CORS_ORIGIN`** entry.
 
 **`frontend/.env`**
 
@@ -146,24 +153,35 @@ The SPA signs in with Supabase Auth and sends the session access token to protec
 
 | Method | Path | Purpose |
 |--------|------|---------|
+| `GET` | `/` | Liveness — `{"ok":true,"service":"jasign-api"}` |
+| `GET` | `/health` | Health check — `{"ok":true}` |
 | `POST` | `/upload` | **Auth:** Bearer JWT. Multipart `file` (PDF) → storage |
-| `POST` | `/request-signature` | **Auth:** Bearer JWT. Creates row; optional Resend email to `signer_email`. Response includes `emailSent` |
+| `POST` | `/request-signature` | **Auth:** Bearer JWT. Creates row; optional Resend email. Response includes `emailSent` (and `emailError` text if send failed) |
 | `GET` | `/document/:token` | Public (signing link). Metadata + `pdf_url`, pages, `status` |
 | `POST` | `/submit-signature` | Public. Signer submits signature by `token` |
 | `GET` | `/documents` | **Auth:** Bearer JWT. Lists documents for the signed-in requester |
 
 ## Tests (Vitest)
 
+Same commands **GitHub Actions** runs on push / pull request to **`main`** or **`master`** (see `.github/workflows/ci.yml`):
+
 ```bash
-cd backend && bun run test
-cd frontend && npm run test
+cd backend && bun install && bun run test
+cd frontend && (npm ci 2>/dev/null || npm install) && npm run test -- --run
 ```
 
-CI runs on push/PR via `.github/workflows/ci.yml`.
+Locally, after dependencies are installed:
+
+```bash
+cd backend && bun run test
+cd frontend && npm run test -- --run
+```
+
+Optional: `cd backend && bun run typecheck` and `cd frontend && npm run typecheck` (not run in CI today).
 
 ## MVP notes
 
 - Your **Jasign account** (email + password through Supabase) is how you upload PDFs and see everything you have sent in one place.
 - **Signers** only open `/sign/:token` from the message or link you give them; they do not need to register.
-- If **`RESEND_API_KEY`** is configured on the API, we can email that link to the signer automatically; you can always copy it from the app as well.
+- If **`RESEND_API_KEY`** is set on the API, the app can email the signing link; **copy link** always works for any signer (especially while Resend is on testing / domain-unverified limits).
 - `expired` status exists in the schema for future use.

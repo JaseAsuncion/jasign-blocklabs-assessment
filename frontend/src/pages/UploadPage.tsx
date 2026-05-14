@@ -6,6 +6,15 @@ import { uploadPdf, requestSignature } from "../lib/api";
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
 
+function isResendTestingRecipientLimit(msg: string | null): boolean {
+  if (!msg) return false;
+  return (
+    msg.includes("only send testing emails") ||
+    msg.includes("verify a domain") ||
+    (msg.includes("403") && msg.includes("validation_error"))
+  );
+}
+
 export function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
@@ -322,24 +331,45 @@ export function UploadPage() {
                 fontSize: 14,
               }}
             >
-              We could not send the email automatically this time. You can still copy the signing link
-              below and share it however you usually reach your signer.
+              {isResendTestingRecipientLimit(emailError) ? (
+                <>
+                  <p style={{ margin: 0 }}>
+                    We could not send the email automatically. The mail provider (Resend) is in{" "}
+                    <strong>testing mode</strong>: with the default sender, it only delivers to your own
+                    verified inbox. To email arbitrary signers you would verify a domain in Resend and set
+                    a matching &quot;from&quot; address on the server.
+                  </p>
+                  <p style={{ margin: "10px 0 0", marginBottom: 0 }}>
+                    Your request is still saved — copy the signing link below and share it with your
+                    signer (email, Slack, etc.).
+                  </p>
+                </>
+              ) : (
+                <p style={{ margin: 0 }}>
+                  We could not send the email automatically (the mail provider returned an error). Your
+                  request is still saved — copy the signing link below and share it however you usually
+                  reach your signer.
+                </p>
+              )}
               {emailError ? (
-                <pre
-                  style={{
-                    margin: "10px 0 0",
-                    padding: 10,
-                    background: "#fff",
-                    border: "1px solid var(--border)",
-                    borderRadius: 8,
-                    fontSize: 11,
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
-                    color: "#334155",
-                  }}
-                >
-                  {emailError.length > 900 ? `${emailError.slice(0, 900)}…` : emailError}
-                </pre>
+                <details style={{ marginTop: 12, fontSize: 12 }}>
+                  <summary style={{ cursor: "pointer", color: "var(--muted)" }}>Technical details</summary>
+                  <pre
+                    style={{
+                      margin: "8px 0 0",
+                      padding: 10,
+                      background: "#fff",
+                      border: "1px solid var(--border)",
+                      borderRadius: 8,
+                      fontSize: 11,
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                      color: "#334155",
+                    }}
+                  >
+                    {emailError.length > 900 ? `${emailError.slice(0, 900)}…` : emailError}
+                  </pre>
+                </details>
               ) : null}
             </div>
           ) : null}

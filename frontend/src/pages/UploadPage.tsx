@@ -6,12 +6,11 @@ import { uploadPdf, requestSignature } from "../lib/api";
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
 
-function isResendTestingRecipientLimit(msg: string | null): boolean {
+function isResendFreeTierRecipientLimit(msg: string | null): boolean {
   if (!msg) return false;
   return (
     msg.includes("only send testing emails") ||
-    msg.includes("verify a domain") ||
-    (msg.includes("403") && msg.includes("validation_error"))
+    msg.includes("You can only send testing")
   );
 }
 
@@ -331,46 +330,24 @@ export function UploadPage() {
                 fontSize: 14,
               }}
             >
-              {isResendTestingRecipientLimit(emailError) ? (
+              {isResendFreeTierRecipientLimit(emailError) ? (
                 <>
                   <p style={{ margin: 0 }}>
-                    We could not send the email automatically. The mail provider (Resend) is in{" "}
-                    <strong>testing mode</strong>: with the default sender, it only delivers to your own
-                    verified inbox. To email arbitrary signers you would verify a domain in Resend and set
-                    a matching &quot;from&quot; address on the server.
+                    We could not send the email to that address automatically. On this deployment, the mail
+                    provider&apos;s <strong>free tier</strong> only allows automated messages to the
+                    account owner&apos;s own email for now — not arbitrary signers.
                   </p>
                   <p style={{ margin: "10px 0 0", marginBottom: 0 }}>
-                    Your request is still saved — copy the signing link below and share it with your
-                    signer (email, Slack, etc.).
+                    Your request is still saved. Copy the signing link below and send it to your signer
+                    yourself (email, Slack, etc.); that flow works for anyone.
                   </p>
                 </>
               ) : (
                 <p style={{ margin: 0 }}>
-                  We could not send the email automatically (the mail provider returned an error). Your
-                  request is still saved — copy the signing link below and share it however you usually
-                  reach your signer.
+                  We could not send the email automatically. Your request is still saved — copy the signing
+                  link below and share it however you usually reach your signer.
                 </p>
               )}
-              {emailError ? (
-                <details style={{ marginTop: 12, fontSize: 12 }}>
-                  <summary style={{ cursor: "pointer", color: "var(--muted)" }}>Technical details</summary>
-                  <pre
-                    style={{
-                      margin: "8px 0 0",
-                      padding: 10,
-                      background: "#fff",
-                      border: "1px solid var(--border)",
-                      borderRadius: 8,
-                      fontSize: 11,
-                      whiteSpace: "pre-wrap",
-                      wordBreak: "break-word",
-                      color: "#334155",
-                    }}
-                  >
-                    {emailError.length > 900 ? `${emailError.slice(0, 900)}…` : emailError}
-                  </pre>
-                </details>
-              ) : null}
             </div>
           ) : null}
           <div className="muted" style={{ fontSize: 13 }}>

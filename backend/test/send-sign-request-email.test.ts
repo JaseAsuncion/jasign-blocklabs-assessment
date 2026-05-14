@@ -57,6 +57,6 @@ describe("sendSignRequestEmail", () => {
     });
 
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.message).toContain("422");
+    if (!r.ok) expect(r.message).toBe("bad");
   });
 });

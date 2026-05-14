@@ -2,15 +2,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import pdfWorkerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { readDroppedPdf } from "../lib/drag-files";
-import { uploadPdf, requestSignature } from "../lib/api";
+import { normalizeEmailErrorFromApi, uploadPdf, requestSignature } from "../lib/api";
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
 
-function isResendFreeTierRecipientLimit(msg: string | null): boolean {
-  if (!msg) return false;
+function isResendFreeTierRecipientLimit(msg: unknown): boolean {
+  const s = normalizeEmailErrorFromApi(msg);
+  if (!s) return false;
   return (
-    msg.includes("only send testing emails") ||
-    msg.includes("You can only send testing")
+    /only send testing emails/i.test(s) ||
+    /send testing emails to your own/i.test(s) ||
+    /verify a domain/i.test(s)
   );
 }
 
@@ -119,7 +121,7 @@ export function UploadPage() {
       const url = `${window.location.origin}${req.signingPath}`;
       setSigningLink(url);
       setEmailSent(req.emailSent);
-      setEmailError(req.emailError ?? null);
+      setEmailError(normalizeEmailErrorFromApi(req.emailError));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
     } finally {

@@ -60,6 +60,14 @@ export async function sendSignRequestEmail(
 
     if (!res.ok) {
       const body = await res.text();
+      try {
+        const j = JSON.parse(body) as { message?: string };
+        if (typeof j.message === "string" && j.message.trim()) {
+          return { ok: false, message: j.message.trim() };
+        }
+      } catch {
+        // not JSON — fall through
+      }
       return { ok: false, message: `${res.status} ${body.slice(0, 500)}` };
     }
     return { ok: true };

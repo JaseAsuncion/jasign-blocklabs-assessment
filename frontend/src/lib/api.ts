@@ -26,6 +26,20 @@ async function parseJsonBody<T>(res: Response): Promise<T> {
   }
 }
 
+/** API may return a string or (if misconfigured) a structured error — always coerce to string for UI logic */
+export function normalizeEmailErrorFromApi(raw: unknown): string | null {
+  if (raw == null) return null;
+  if (typeof raw === "string") {
+    const t = raw.trim();
+    return t.length > 0 ? t : null;
+  }
+  if (typeof raw === "object" && raw !== null && "message" in raw) {
+    const m = (raw as { message: unknown }).message;
+    if (typeof m === "string" && m.trim()) return m.trim();
+  }
+  return null;
+}
+
 export async function uploadPdf(file: File): Promise<{ fileKey: string; pdfUrl: string }> {
   const ah = await authHeaders();
   if (!("Authorization" in ah)) {
@@ -67,16 +81,17 @@ export async function requestSignature(payload: {
     token?: string;
     signingPath?: string;
     emailSent?: boolean;
-    emailError?: string;
+    emailError?: unknown;
   }>(res);
   if (!res.ok) throw new Error(json.error ?? "Request failed");
   if (!json.id || !json.token || !json.signingPath) throw new Error("Invalid response");
+  const emailErr = normalizeEmailErrorFromApi(json.emailError);
   return {
     id: json.id,
     token: json.token,
     signingPath: json.signingPath,
     emailSent: Boolean(json.emailSent),
-    ...(json.emailError ? { emailError: json.emailError } : {}),
+    ...(emailErr ? { emailError: emailErr } : {}),
   };
 }
 

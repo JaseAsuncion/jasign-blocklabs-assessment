@@ -63,7 +63,7 @@ Vite serves the app at **http://localhost:5173**.
 3. On **Upload**, pick a PDF, add title and signer details, and **Send signature request**.
 4. Open the signing link (or use the dashboard) and complete a signature.
 
-If anything fails, confirm `CORS_ORIGIN` in `backend/.env` matches your Vite origin (default `http://localhost:5173`) and that storage bucket names match what the API expects (`documents`, `signed`).
+If anything fails, confirm **`CORS_ORIGIN`** on the API matches your frontend origin (default `http://localhost:5173` for local Vite). You can list **several origins separated by commas** (no spaces required), e.g. production and Vercel preview URLs. Ensure storage bucket names match what the API expects (`documents`, `signed`).
 
 ## Submission & tooling (assessments)
 
@@ -116,6 +116,8 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 SUPABASE_ANON_KEY=your-anon-public-key
 PORT=3001
 CORS_ORIGIN=http://localhost:5173
+# Or multiple frontends (production + Vercel previews), comma-separated, no trailing slashes:
+# CORS_ORIGIN=https://myapp.vercel.app,https://myapp-git-main-user.vercel.app
 PUBLIC_STORAGE_BASE=https://xxxx.supabase.co/storage/v1/object/public
 
 # Optional — email signing link to signer (Resend)
@@ -126,7 +128,7 @@ PUBLIC_STORAGE_BASE=https://xxxx.supabase.co/storage/v1/object/public
 
 Use the **same** `SUPABASE_URL` as in the dashboard. `SUPABASE_ANON_KEY` is the **anon public** key; the API uses it only to validate `Authorization: Bearer <access_token>` from the React app (still uses the **service role** for storage and DB writes).
 
-**Signer emails (optional):** set `RESEND_API_KEY` in `backend/.env` to send the signing link to the signer when you create a request ([Resend](https://resend.com)). For quick tests, use sender `Jasign <onboarding@resend.dev>` (leave `EMAIL_FROM` empty to use the default) and note Resend may only allow recipients allowed on your plan until you verify a domain. Set `EMAIL_FROM` to your verified domain address in production. Use `PUBLIC_APP_URL` if the link in emails must differ from `CORS_ORIGIN` (for example API on a subdomain and SPA elsewhere).
+**Signer emails (optional):** set `RESEND_API_KEY` in `backend/.env` to send the signing link to the signer when you create a request ([Resend](https://resend.com)). For quick tests, use sender `Jasign <onboarding@resend.dev>` (leave `EMAIL_FROM` empty to use the default) and note Resend may only allow recipients allowed on your plan until you verify a domain. Set `EMAIL_FROM` to your verified domain address in production. Use `PUBLIC_APP_URL` if the link in emails must differ from your primary frontend URL (defaults to the **first** origin in `CORS_ORIGIN` when unset).
 
 **`frontend/.env`**
 

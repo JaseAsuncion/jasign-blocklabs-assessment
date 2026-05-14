@@ -67,11 +67,13 @@ const app = new Elysia()
   })
   .use(
     cors({
-      origin: env.CORS_ORIGIN,
+      origin:
+        env.CORS_ORIGINS.length === 1 ? env.CORS_ORIGINS[0]! : env.CORS_ORIGINS,
       credentials: true,
       allowedHeaders: ["Content-Type", "Authorization"],
     }),
   )
+  .get("/", () => ({ ok: true, service: "jasign-api" }))
   .get("/health", () => ({ ok: true }))
   .post(
     "/upload",
@@ -139,7 +141,9 @@ const app = new Elysia()
         return { error: error?.message ?? "Insert failed" };
       }
 
-      const appBase = (env.PUBLIC_APP_URL || env.CORS_ORIGIN).replace(/\/$/, "");
+      const appBase = (
+        env.PUBLIC_APP_URL || env.CORS_ORIGINS[0] || "http://localhost:5173"
+      ).replace(/\/$/, "");
       const signingUrl = `${appBase}/sign/${token}`;
 
       let emailSent = false;

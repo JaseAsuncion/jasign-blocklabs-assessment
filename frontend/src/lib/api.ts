@@ -1,6 +1,13 @@
 import { supabase } from "./supabase-browser";
 
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
+const API_BASE = (import.meta.env.VITE_API_URL ?? "http://localhost:3001")
+  .trim()
+  .replace(/\/+$/, "");
+
+function apiUrl(path: string): string {
+  const p = path.startsWith("/") ? path : `/${path}`;
+  return `${API_BASE}${p}`;
+}
 
 async function authHeaders(): Promise<HeadersInit> {
   const { data } = await supabase.auth.getSession();
@@ -26,7 +33,7 @@ export async function uploadPdf(file: File): Promise<{ fileKey: string; pdfUrl: 
   }
   const fd = new FormData();
   fd.append("file", file);
-  const res = await fetch(`${API_BASE}/upload`, { method: "POST", headers: ah, body: fd });
+  const res = await fetch(apiUrl("/upload"), { method: "POST", headers: ah, body: fd });
   const json = await parseJsonBody<{ error?: string; fileKey?: string; pdfUrl?: string }>(res);
   if (!res.ok) throw new Error(json.error ?? "Upload failed");
   if (!json.fileKey || !json.pdfUrl) throw new Error("Invalid upload response");
@@ -43,7 +50,7 @@ export async function requestSignature(payload: {
   if (!("Authorization" in ah)) {
     throw new Error("You must be signed in to create a signature request.");
   }
-  const res = await fetch(`${API_BASE}/request-signature`, {
+  const res = await fetch(apiUrl("/request-signature"), {
     method: "POST",
     headers: { "Content-Type": "application/json", ...ah },
     body: JSON.stringify(payload),
@@ -78,7 +85,7 @@ export type DocumentPayload = {
 };
 
 export async function getDocumentByToken(token: string): Promise<DocumentPayload> {
-  const res = await fetch(`${API_BASE}/document/${encodeURIComponent(token)}`);
+  const res = await fetch(apiUrl(`/document/${encodeURIComponent(token)}`));
   const json = await parseJsonBody<{ error?: string } & Partial<DocumentPayload>>(res);
   if (!res.ok) throw new Error(json.error ?? "Failed to load document");
   if (!json.id || !json.pdf_url) throw new Error("Invalid document payload");
@@ -90,7 +97,7 @@ export async function submitSignature(payload: {
   imageBase64: string;
   placement: { pageIndex: number; nx: number; ny: number; nw: number; nh: number };
 }): Promise<{ signed_pdf_url: string }> {
-  const res = await fetch(`${API_BASE}/submit-signature`, {
+  const res = await fetch(apiUrl("/submit-signature"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -118,7 +125,7 @@ export async function listDocuments(): Promise<DashboardDocument[]> {
   if (!("Authorization" in ah)) {
     throw new Error("You must be signed in to view your documents.");
   }
-  const res = await fetch(`${API_BASE}/documents`, { headers: ah });
+  const res = await fetch(apiUrl("/documents"), { headers: ah });
   const json = await parseJsonBody<{ error?: string; documents?: DashboardDocument[] }>(res);
   if (!res.ok) throw new Error(json.error ?? "Failed to list documents");
   return json.documents ?? [];
